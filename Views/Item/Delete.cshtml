@@ -1,0 +1,48 @@
+@model ProductsRazor.Models.Item
+@{
+    ViewData["Title"] = "Delete Product";
+}
+
+<h3> Are you sure to delete this product?</h3>
+
+<div class="card shadow">
+    <div class="card-header">
+        @ViewData["Title"]
+    </div>
+    <div class="card-body">
+        <form asp-action="Delete" method="post">
+            <input type="hidden" asp-for="IdItem" />
+
+            <div class="form-group">
+                <label asp-for="Name"></label>
+                <input asp-for="Name" class="form-control" readonly />
+            </div>
+            <div class="form-group">
+                <label asp-for="Price"></label>
+                <input type="text" class="form-control" value="@Model.Price.ToString("C")" readonly />
+            </div>
+
+            <div class="form-group">
+                <label>Serial Numbers</label>
+                <ul class="form-control" style="list-style-type:none; border:none; padding:0;">
+                    @foreach (var sn in (List<string>)ViewBag.SerialNumber)
+                    {
+                        <input asp-for="Name" class="form-control" value = "@sn" readonly />
+                    }
+                </ul>
+            </div>
+
+
+            <div class="form-group">
+                <label>Category</label>
+                <input type="text" class="form-control" value="@Model.IdCategoryNavigation.NameCategory" readonly />
+            </div>
+
+
+            <div class="d-flex justify-content-between mt-3">
+                <button type="submit" class="btn btn-danger">Delete</button>
+                <a asp-controller= "Item" asp-action="Index" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>

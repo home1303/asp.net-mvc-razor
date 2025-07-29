@@ -1,0 +1,77 @@
+@model ProductsRazor.Models.Item
+@{
+    var serials = ViewBag.SerialNumber as List<string> ?? new List<string> { "" };
+}
+
+<div class="form-group">
+    <label asp-for="Name"></label>
+    <input asp-for="Name" class="form-control" />
+    <span asp-validation-for="Name" class="text-danger"></span>
+</div>
+
+<div class="form-group">
+    <label asp-for="Price"></label>
+    <input asp-for="Price" class="form-control" />
+    <span asp-validation-for="Price" class="text-danger"></span>
+</div>
+
+<div class="form-group" id="serialNumbersWrapper">
+    <div class="d-flex align-items-center mb-2">
+        <label class="mr-2">Serial Numbers</label>
+        <button type="button" class="btn btn-success btn-sm mx-1" onclick="addSerial()">+</button>
+    </div>
+    @for (int i = 0; i < serials.Count; i++)
+    {
+        <div class="input-group mb-2 serial-input">
+            <input name="serialNumber[]" value="@serials[i]" class="form-control" />
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeSerial(this)">-</button>
+        </div>
+    }
+    @Html.ValidationMessage("serialNumber", "", new { @class = "text-danger" })
+    @* serialNumber ไม่ได้อยู่ใน model item  *@
+</div>
+
+<div class="form-group">
+    <label asp-for="IdCategory">Category</label>
+    <select asp-for="IdCategory" asp-items="ViewBag.Categories" class="form-control">
+        <option value="">-- Select Category --</option>
+    </select>
+    <span asp-validation-for="IdCategory" class="text-danger"></span>
+</div>
+
+<script>
+    let serialCount = @serials.Count;
+    function addSerial() {
+        const wrapper = document.getElementById('serialNumbersWrapper');
+
+        
+        const div = document.createElement('div');
+        div.className = 'input-group mb-2 serial-input';
+
+        
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.name = 'serialNumber[]';
+        input.className = 'form-control';
+        input.placeholder = 'Serial Number';
+
+        
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-danger btn-sm';
+        btn.textContent = '-';
+        btn.onclick = function () {
+            div.remove();
+        };
+
+       
+        div.appendChild(input);
+        div.appendChild(btn);
+
+        wrapper.appendChild(div);
+    }
+
+    function removeSerial(button) {
+        button.closest('.serial-input').remove();
+    }
+</script>
