@@ -7,8 +7,8 @@ using Microsoft.EntityFrameworkCore;
 namespace ProductsRazor.Models;
 
 [PrimaryKey("ItemId", "SerialId")]
-[Table("join_table")]
-public partial class JoinTable
+[Table("Item_Serial")]
+public partial class ItemSerial
 {
     [Key]
     public int ItemId { get; set; }
@@ -19,10 +19,10 @@ public partial class JoinTable
     public string? Remark { get; set; }
 
     [ForeignKey("ItemId")]
-    [InverseProperty("JoinTables")]
+    [InverseProperty("ItemSerials")]
     public virtual Item Item { get; set; } = null!;
 
     [ForeignKey("SerialId")]
-    [InverseProperty("JoinTables")]
+    [InverseProperty("ItemSerials")]
     public virtual Serial Serial { get; set; } = null!;
 }

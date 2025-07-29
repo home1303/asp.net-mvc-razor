@@ -19,7 +19,7 @@ public partial class ProductsContext : DbContext
 
     public virtual DbSet<Item> Items { get; set; }
 
-    public virtual DbSet<JoinTable> JoinTables { get; set; }
+    public virtual DbSet<ItemSerial> ItemSerials { get; set; }
 
     public virtual DbSet<Serial> Serials { get; set; }
 
@@ -36,13 +36,15 @@ public partial class ProductsContext : DbContext
                 .HasConstraintName("FK_Item_Category");
         });
 
-        modelBuilder.Entity<JoinTable>(entity =>
+        modelBuilder.Entity<ItemSerial>(entity =>
         {
-            entity.HasOne(d => d.Item).WithMany(p => p.JoinTables)
+            entity.HasKey(e => new { e.ItemId, e.SerialId }).HasName("PK_join_table");
+
+            entity.HasOne(d => d.Item).WithMany(p => p.ItemSerials)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_join_table_Item");
 
-            entity.HasOne(d => d.Serial).WithMany(p => p.JoinTables)
+            entity.HasOne(d => d.Serial).WithMany(p => p.ItemSerials)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_join_table_Serial");
         });

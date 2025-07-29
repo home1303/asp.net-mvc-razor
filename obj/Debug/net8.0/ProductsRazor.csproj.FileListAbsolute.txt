@@ -168,3 +168,4 @@ D:\Razor1\ProductsRazor\ProductsRazor\obj\Debug\net8.0\refint\ProductsRazor.dll
 D:\Razor1\ProductsRazor\ProductsRazor\obj\Debug\net8.0\ProductsRazor.pdb
 D:\Razor1\ProductsRazor\ProductsRazor\obj\Debug\net8.0\ProductsRazor.genruntimeconfig.cache
 D:\Razor1\ProductsRazor\ProductsRazor\obj\Debug\net8.0\ref\ProductsRazor.dll
+D:\Razor1\ProductsRazor\ProductsRazor\obj\Debug\net8.0\ProductsRazor.sourcelink.json

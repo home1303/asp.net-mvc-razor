@@ -42,7 +42,7 @@ namespace ProductsRazor.Controllers
                 item.UpdateDate = DateTime.Now;
                 item.IsDeleted = false;
 
-                var joinTable = new List<JoinTable>();
+                var joinTableIS = new List<ItemSerial>();
 
                 if (serialNumber != null)
                 {
@@ -58,19 +58,19 @@ namespace ProductsRazor.Controllers
                                 UpdateDate = DateTime.Now
                             };
 
-                            var join = new JoinTable
+                            var join = new ItemSerial
                             {
                                 Item = item,
                                 Serial = serial,
                                 Remark = null
 
                             };
-                            joinTable.Add(join);
+                            joinTableIS.Add(join);
                         }
                     }
                 }
 
-                item.JoinTables = joinTable;
+                item.ItemSerials = joinTableIS;
                 _context.Items.Add(item);  //cascade serial add พร้อมกับ item
                 await _context.SaveChangesAsync();
 
@@ -89,8 +89,8 @@ namespace ProductsRazor.Controllers
             List<Item> items = await _context.Items //ดึงข้อมูลทั้งหมด
             .Where(item => !item.IsDeleted) // เฉพาะ ทีเป็น false(0)
             .Include(item => item.IdCategoryNavigation)//ดึง namecategory มาแสดงด้วย
-            .Include(item => item.JoinTables)             // ดึง join table
-                .ThenInclude(JoinTable => JoinTable.Serial)//ดึง serials มาแสดงด้วย
+            .Include(item => item.ItemSerials)             // ดึง join table(ItemSerial)
+                .ThenInclude(jt => jt.Serial)//ดึง serials มาแสดงด้วย
             .ToListAsync();
             return View(items);
         }
@@ -104,14 +104,14 @@ namespace ProductsRazor.Controllers
 
             var item = await _context.Items
                 .Include(i => i.IdCategoryNavigation)
-                .Include(i => i.JoinTables)
-                    .ThenInclude(JoinTable => JoinTable.Serial)
+                .Include(i => i.ItemSerials)
+                    .ThenInclude(jt => jt.Serial)
                 .FirstOrDefaultAsync(m => m.IdItem == id); //ดึงข้อมูลทั้งหมดตาม id
             if (item == null)
             {
                 return NotFound();
             }
-            ViewBag.SerialNumber = item.JoinTables.Select(jt => jt.Serial.SerialNumber).ToList();   //ดึง serialNumber โดย item->JoinTables->Serial->SerialNumber
+            ViewBag.SerialNumber = item.ItemSerials.Select(jt => jt.Serial.SerialNumber).ToList();   //ดึง serialNumber โดย item->JoinTables(ItemSerial)->Serial->SerialNumber
 
             LoadCategories();
             return View(item);
@@ -142,8 +142,8 @@ namespace ProductsRazor.Controllers
             {
                 try
                 {
-                    //ดึงค่า serial ตาม item ปัจจุบัน โดย Serials-> Jointable->ดึงจาก ทุกๆ(item.Iditem) เทียบกันว่าเท่ากับ item.Iditem ปัจจุบัน 
-                    var existingJTables = await _context.JoinTables.Include(jt => jt.Serial).Where(jt => jt.Item.IdItem == item.IdItem).ToListAsync();
+                    //ดึงค่า serial ตาม item ปัจจุบัน โดย Serials-> Jointable(ItemSerial)->ดึงจาก ทุกๆ(item.Iditem) เทียบกันว่าเท่ากับ item.Iditem ปัจจุบัน 
+                    var existingJTables = await _context.ItemSerials.Include(jt => jt.Serial).Where(jt => jt.Item.IdItem == item.IdItem).ToListAsync();
 
 
                     item.CreateBy = "admin";                  //อัพเดตให้ครบทุกฟิลด์
@@ -161,21 +161,21 @@ namespace ProductsRazor.Controllers
                         .Select(s => s.Trim())
                         .ToList();
 
-                    // ลบ JoinTable และ Serial ที่ไม่ได้ใช้
-                    foreach (JoinTable jt in existingJTables)
+                    // ลบ JoinTable(ItemSerial) และ Serial ที่ไม่ได้ใช้
+                    foreach (ItemSerial jt in existingJTables)
                     {
                         if (!serialNumbersList.Contains(jt.Serial.SerialNumber))
                         {
-                            // ลบ record ใน JoinTable ก่อน
-                            _context.JoinTables.Remove(jt);
+                            // ลบ record ใน JoinTable(ItemSerial) ก่อน
+                            _context.ItemSerials.Remove(jt);
 
-                            // เช็คว่า Serial นี้ยังมี JoinTable อื่นอยู่ไหม
-                            bool isSerialUsed = await _context.JoinTables
+                            // เช็คว่า Serial นี้ยังมี JoinTable(ItemSerial) อื่นอยู่ไหม
+                            bool isSerialUsed = await _context.ItemSerials
                                 .AnyAsync(x => x.SerialId == jt.SerialId && x.ItemId != item.IdItem);
 
                             if (!isSerialUsed)
                             {
-                                // ถ้า Serial ไม่มีใช้แล้วใน JoinTable อื่น ให้ลบจาก Serial
+                                // ถ้า Serial ไม่มีใช้แล้วใน JoinTable(ItemSerial) อื่น ให้ลบจาก Serial
                                 _context.Serials.Remove(jt.Serial);
                             }
                         }
@@ -201,13 +201,13 @@ namespace ProductsRazor.Controllers
                                 _context.Serials.Add(serialEntity);
                                 await _context.SaveChangesAsync();
                             }
-                            var newjoin = new JoinTable
+                            var newjoin = new ItemSerial
                             {
                                 ItemId = item.IdItem,
                                 SerialId = serialEntity.IdSerial,
                                 Remark = null
                             };
-                            _context.JoinTables.Add(newjoin);
+                            _context.ItemSerials.Add(newjoin);
                         }
                     }
 
@@ -271,15 +271,15 @@ namespace ProductsRazor.Controllers
 
             var item = await _context.Items
                 .Include(i => i.IdCategoryNavigation)
-                .Include(i => i.JoinTables)
-                    .ThenInclude(JoinTable => JoinTable.Serial)
+                .Include(i => i.ItemSerials)
+                    .ThenInclude(jt => jt.Serial)
                 .FirstOrDefaultAsync(i => i.IdItem == id);
             if (item == null)
             {
                 return NotFound();
             }
 
-            ViewBag.SerialNumber = item.JoinTables.Select(jt => jt.Serial.SerialNumber).ToList();
+            ViewBag.SerialNumber = item.ItemSerials.Select(jt => jt.Serial.SerialNumber).ToList();
             return View(item);
         }
 
@@ -288,7 +288,7 @@ namespace ProductsRazor.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var item = await _context.Items
-                .Include(i => i.JoinTables)
+                .Include(i => i.ItemSerials)
                     .ThenInclude(jt => jt.Serial)
                 .FirstOrDefaultAsync(i => i.IdItem == id);
             if (item == null)
@@ -297,12 +297,12 @@ namespace ProductsRazor.Controllers
             }
 
             //เก็บ serial ที่จะลบ
-            var serialsToDelete = item.JoinTables.Select(jt => jt.Serial).ToList();
+            var serialsToDelete = item.ItemSerials.Select(jt => jt.Serial).ToList();
 
-            // ลบ JoinTable records ที่เชื่อมกับ Item นี้
-            if (item.JoinTables.Any())
+            // ลบ JoinTable(ItemSerial) records ที่เชื่อมกับ Item นี้
+            if (item.ItemSerials.Any())
             {
-                _context.JoinTables.RemoveRange(item.JoinTables);
+                _context.ItemSerials.RemoveRange(item.ItemSerials);
                 await _context.SaveChangesAsync();
             }
 

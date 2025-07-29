@@ -45,5 +45,5 @@ public partial class Item
     public virtual Category IdCategoryNavigation { get; set; } = null!;
 
     [InverseProperty("Item")]
-    public virtual ICollection<JoinTable> JoinTables { get; set; } = new List<JoinTable>();
+    public virtual ICollection<ItemSerial> ItemSerials { get; set; } = new List<ItemSerial>();
 }

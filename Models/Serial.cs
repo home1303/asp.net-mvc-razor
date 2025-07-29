@@ -30,5 +30,5 @@ public partial class Serial
     public string Status { get; set; } = null!;
 
     [InverseProperty("Serial")]
-    public virtual ICollection<JoinTable> JoinTables { get; set; } = new List<JoinTable>();
+    public virtual ICollection<ItemSerial> ItemSerials { get; set; } = new List<ItemSerial>();
 }
