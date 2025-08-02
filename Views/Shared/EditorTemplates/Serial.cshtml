@@ -1,0 +1,22 @@
+@model ProductsRazor.Models.Serial
+@Html.HiddenFor(model => model.IdItem)
+@Html.HiddenFor(model => model.Status)
+@Html.HiddenFor(model => model.CretaeDate)
+@Html.HiddenFor(model => model.UpdateDate)
+@Html.HiddenFor(model => model.IdSerial)
+@Html.HiddenFor(model => model.Isdeleted)
+
+
+    <div class="form-group">
+    @if (Model.Isdeleted != true)
+    {
+        <label>Serial Number</label>
+        <input asp-for="SerialNumber" class="form-control mb-2" />
+        @* <span asp-validation-for="SerialNumber" class="text-danger"></span> *@
+        <button type="submit" name="DeleteSI" value="@Model.IdSerial" class="btn btn-danger btn-sm">- ลบ</button>
+    }
+    else{
+        @Html.HiddenFor(model => model.SerialNumber)
+    }
+    </div>
+

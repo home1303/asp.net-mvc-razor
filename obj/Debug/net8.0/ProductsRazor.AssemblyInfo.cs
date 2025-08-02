@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ProductsRazor")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3250fb9c39770dc4915f5256b95df7fcb94ea9c6")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3c2b2daf115a460931a79fca5cb380584ff9a4e0")]
 [assembly: System.Reflection.AssemblyProductAttribute("ProductsRazor")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ProductsRazor")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

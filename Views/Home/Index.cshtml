@@ -35,7 +35,7 @@
                         <tr>
                             <td>@item.Name</td>
                             <td>@item.Price.ToString("C")</td>
-                            <td>@string.Join(", ", item.ItemSerials.Select(jt => jt.Serial.SerialNumber))</td> 
+                            @* <td>@string.Join(", ", item.ItemSerials.Select(jt => jt.Serial.SerialNumber))</td>  *@
                             <td>@item.IdCategoryNavigation.NameCategory</td>
                             <td class="text-end">
                                 <a asp-controller= "Item" asp-action="Edit" asp-route-id="@item.IdItem" class="btn btn-sm btn-warning">Edit</a>

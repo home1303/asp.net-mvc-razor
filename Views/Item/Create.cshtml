@@ -1,7 +1,6 @@
 @model ProductsRazor.Models.Item
 @{
     ViewData["Title"] = "Create Item";
-    ViewBag.SerialNumber ??= new List<string> { "" }; // ค่าเริ่มต้น
 }
 
 <div class="card shadow">
@@ -10,9 +9,11 @@
         <form asp-action="Create" method="post">
             @Html.AntiForgeryToken()
             @Html.EditorFor(model => model, "Item")
+
+            
             <div class="d-flex justify-content-between mt-3">
                 <button type="submit" class="btn btn-primary">Create</button>
-                <a asp-controller= "Item" asp-action="Index" class="btn btn-secondary">Cancel</a>
+                <a asp-controller="Item" asp-action="Index" class="btn btn-secondary">Cancel</a>
             </div>
         </form>
     </div>

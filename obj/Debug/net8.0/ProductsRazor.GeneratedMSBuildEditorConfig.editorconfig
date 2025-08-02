@@ -56,6 +56,10 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXEVkaXRvclRlbXBsYXRlc1xJdGVtLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/Razor1/ProductsRazor/ProductsRazor/Views/Shared/EditorTemplates/Serial.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXEVkaXRvclRlbXBsYXRlc1xTZXJpYWwuY3NodG1s
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/Razor1/ProductsRazor/ProductsRazor/Views/Shared/Error.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXEVycm9yLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 

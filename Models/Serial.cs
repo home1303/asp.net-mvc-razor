@@ -29,6 +29,13 @@ public partial class Serial
     [Unicode(false)]
     public string Status { get; set; } = null!;
 
-    [InverseProperty("Serial")]
-    public virtual ICollection<ItemSerial> ItemSerials { get; set; } = new List<ItemSerial>();
+    [Column("id_item")]
+    public int IdItem { get; set; }
+
+    [Column("isdeleted")]
+    public bool Isdeleted { get; set; }
+
+    [ForeignKey("IdItem")]
+    [InverseProperty("Serials")]
+    public virtual Item IdItemNavigation { get; set; } = null!;
 }

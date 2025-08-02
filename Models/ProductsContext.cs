@@ -19,8 +19,6 @@ public partial class ProductsContext : DbContext
 
     public virtual DbSet<Item> Items { get; set; }
 
-    public virtual DbSet<ItemSerial> ItemSerials { get; set; }
-
     public virtual DbSet<Serial> Serials { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -36,17 +34,11 @@ public partial class ProductsContext : DbContext
                 .HasConstraintName("FK_Item_Category");
         });
 
-        modelBuilder.Entity<ItemSerial>(entity =>
+        modelBuilder.Entity<Serial>(entity =>
         {
-            entity.HasKey(e => new { e.ItemId, e.SerialId }).HasName("PK_join_table");
-
-            entity.HasOne(d => d.Item).WithMany(p => p.ItemSerials)
+            entity.HasOne(d => d.IdItemNavigation).WithMany(p => p.Serials)
                 .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_join_table_Item");
-
-            entity.HasOne(d => d.Serial).WithMany(p => p.ItemSerials)
-                .OnDelete(DeleteBehavior.ClientSetNull)
-                .HasConstraintName("FK_join_table_Serial");
+                .HasConstraintName("FK_Serial_Item");
         });
 
         OnModelCreatingPartial(modelBuilder);

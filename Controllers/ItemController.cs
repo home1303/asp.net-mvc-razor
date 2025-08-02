@@ -1,9 +1,9 @@
-using System.Diagnostics;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+// using System.Diagnostics;
+using Microsoft.AspNetCore.Mvc; // [HTTP]
+using Microsoft.EntityFrameworkCore; //[DbContext]
 using ProductsRazor.Models;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.AspNetCore.Mvc.Rendering; // SelectList => LoadCate
+using System.Diagnostics;
 
 namespace ProductsRazor.Controllers
 {
@@ -19,19 +19,51 @@ namespace ProductsRazor.Controllers
         public IActionResult Create()
         {
 
+            Item item = new Item
+            {
+                Serials = new List<Serial>()
+            };
+
             LoadCategories();
-            return View();
+            return View(item);
         }
 
         [HttpPost] //POST Create
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,Price,IdCategory")] Item item, string[] serialNumber)
+        public IActionResult Create(Item item, string? Addsn, int? DeleteSI)
         {
             ModelState.Remove("CreateBy");
             ModelState.Remove("UpdateBy");
             ModelState.Remove("IdCategoryNavigation");   //ต้องลบก่อน เพราะ ตั้งค่าไว้ว่า NOT NULL ซึ่งถ้าไม่ลบมันจะไม่ผ่านเงื่อนไข
 
-            ValidateItem(item, serialNumber);
+            if (!string.IsNullOrEmpty(Addsn))
+            {
+                item.Serials = item.Serials.Where(s => !s.Isdeleted).ToList();
+
+                item.Serials.Add(new Serial());
+                LoadCategories();
+                return View(item);
+            }
+
+            if (DeleteSI != null)
+            {
+                var serial = item.Serials.FirstOrDefault(s => s.IdSerial == DeleteSI);
+                if (serial != null)
+                {
+                    serial.Isdeleted = true;
+                }
+                item.Serials = item.Serials.Where(s => !s.Isdeleted).ToList();  //กรองตัวที่ isdeleted == false
+                LoadCategories();
+                return View(item);
+            }
+
+
+
+            for (int i = 0; i < item.Serials.Count; i++)
+            {
+                ModelState.Remove($"Serials[{i}].IdItemNavigation");
+                ModelState.Remove($"Serials[{i}].Status");
+            }
 
             if (ModelState.IsValid)
             {
@@ -42,43 +74,21 @@ namespace ProductsRazor.Controllers
                 item.UpdateDate = DateTime.Now;
                 item.IsDeleted = false;
 
-                var joinTableIS = new List<ItemSerial>();
-
-                if (serialNumber != null)
-                {
-                    foreach (var sn in serialNumber)
-                    {
-                        if (!string.IsNullOrWhiteSpace(sn))
-                        {
-                            var serial = new Serial
-                            {
-                                SerialNumber = sn.Trim(),
-                                Status = "Active",
-                                CretaeDate = DateTime.Now,
-                                UpdateDate = DateTime.Now
-                            };
-
-                            var join = new ItemSerial
-                            {
-                                Item = item,
-                                Serial = serial,
-                                Remark = null
-
-                            };
-                            joinTableIS.Add(join);
-                        }
-                    }
+                if (item.Serials != null)
+                { //เพราะ serialnumber โอกาสเป็น null ได้ แต่ serialnumber ที่เป็น array ไม่สามารถ null ได้
+                    UpdateSerialNumber(item.Serials, item);
                 }
+                _context.Items.Add(item);
+                _context.SaveChanges();
+                return RedirectToAction("Index");
 
-                item.ItemSerials = joinTableIS;
-                _context.Items.Add(item);  //cascade serial add พร้อมกับ item
-                await _context.SaveChangesAsync();
 
-                return RedirectToAction(nameof(Index));
             }
             LoadCategories();
             return View(item);
         }
+
+
 
 
 
@@ -89,8 +99,7 @@ namespace ProductsRazor.Controllers
             List<Item> items = await _context.Items //ดึงข้อมูลทั้งหมด
             .Where(item => !item.IsDeleted) // เฉพาะ ทีเป็น false(0)
             .Include(item => item.IdCategoryNavigation)//ดึง namecategory มาแสดงด้วย
-            .Include(item => item.ItemSerials)             // ดึง join table(ItemSerial)
-                .ThenInclude(jt => jt.Serial)//ดึง serials มาแสดงด้วย
+            .Include(item => item.Serials)             // ดึง join table(ItemSerial)
             .ToListAsync();
             return View(items);
         }
@@ -102,20 +111,22 @@ namespace ProductsRazor.Controllers
                 return NotFound();
             }
 
-            var item = await _context.Items
+            Item item = await _context.Items
                 .Include(i => i.IdCategoryNavigation)
-                .Include(i => i.ItemSerials)
-                    .ThenInclude(jt => jt.Serial)
-                .FirstOrDefaultAsync(m => m.IdItem == id); //ดึงข้อมูลทั้งหมดตาม id
+                .Include(i => i.Serials)
+                .FirstAsync(m => m.IdItem == id); //ดึงข้อมูลทั้งหมดตาม id
             if (item == null)
-            {
+            {  
                 return NotFound();
             }
-            ViewBag.SerialNumber = item.ItemSerials.Select(jt => jt.Serial.SerialNumber).ToList();   //ดึง serialNumber โดย item->JoinTables(ItemSerial)->Serial->SerialNumber
+
 
             LoadCategories();
             return View(item);
         }
+
+
+
 
         private bool ItemExists(int id)
         {
@@ -124,7 +135,7 @@ namespace ProductsRazor.Controllers
 
         [HttpPost]  //POST Update
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("IdItem,Name,Price,IdCategory")] Item item, string[] serialNumber)//ถ้าไม่ระบุ IdItem จะเกิดปัญหาในการสร้างข้อมูลใหม่ เพราะ IdItem เป็น Primary Key
+        public async Task<IActionResult> Edit(int id, Item item, string? Addsn, List<int>? DeleteSI)//ถ้าไม่ระบุ IdItem จะเกิดปัญหาในการสร้างข้อมูลใหม่ เพราะ IdItem เป็น Primary Key
         {
             if (id != item.IdItem)
             {
@@ -136,82 +147,55 @@ namespace ProductsRazor.Controllers
             ModelState.Remove("IdCategoryNavigation");    //ต้องลบก่อน เพราะ ตั้งค่าไว้ว่า NOT NULL ซึ่งถ้าไม่ลบมันจะไม่ผ่านเงื่อนไข
 
 
-            ValidateItem(item, serialNumber);
+
+            if (!string.IsNullOrEmpty(Addsn))
+            {
+                item.Serials.Add(new Serial()); 
+                LoadCategories();
+                return View(item);
+            }
+
+             if (DeleteSI != null && DeleteSI.Count > 0)
+            {
+                foreach (var idToDelete in DeleteSI)
+                {
+                    var serial = item.Serials.FirstOrDefault(s => s.IdSerial == idToDelete);
+                    if (serial != null)
+                    {
+                        serial.Isdeleted = true;      // ทำเครื่องหมายว่าลบ (soft delete) 
+                        serial.UpdateDate = DateTime.Now;  // อัพเดตวันที่แก้ไข
+                    }
+                }
+
+                LoadCategories();
+                return View(item);
+            }
+
+
+
+
+            for (int i = 0; i < item.Serials.Count; i++)
+            {
+                ModelState.Remove($"Serials[{i}].IdItemNavigation");
+                ModelState.Remove($"Serials[{i}].Status");
+            }
 
             if (ModelState.IsValid)
             {
                 try
                 {
-                    //ดึงค่า serial ตาม item ปัจจุบัน โดย Serials-> Jointable(ItemSerial)->ดึงจาก ทุกๆ(item.Iditem) เทียบกันว่าเท่ากับ item.Iditem ปัจจุบัน 
-                    var existingJTables = await _context.ItemSerials.Include(jt => jt.Serial).Where(jt => jt.Item.IdItem == item.IdItem).ToListAsync();
-
-
-                    item.CreateBy = "admin";                  //อัพเดตให้ครบทุกฟิลด์
-                    item.CreateDate = DateTime.Now;
+                    //อัพเดต
                     item.UpdateBy = "admin";
                     item.UpdateDate = DateTime.Now;
-                    item.IsDeleted = false;
-                    _context.Update(item);
 
+                    if (item.Serials != null)
+                    { //เพราะ serialnumber โอกาสเป็น null ได้ แต่ serialnumber ที่เป็น array ไม่สามารถ null ได้
+                        UpdateSerialNumber(item.Serials, item);
+
+                    }
+                    _context.Entry(item).State = EntityState.Modified;
                     await _context.SaveChangesAsync();
 
-
-                    var serialNumbersList = serialNumber
-                        .Where(s => !string.IsNullOrWhiteSpace(s))
-                        .Select(s => s.Trim())
-                        .ToList();
-
-                    // ลบ JoinTable(ItemSerial) และ Serial ที่ไม่ได้ใช้
-                    foreach (ItemSerial jt in existingJTables)
-                    {
-                        if (!serialNumbersList.Contains(jt.Serial.SerialNumber))
-                        {
-                            // ลบ record ใน JoinTable(ItemSerial) ก่อน
-                            _context.ItemSerials.Remove(jt);
-
-                            // เช็คว่า Serial นี้ยังมี JoinTable(ItemSerial) อื่นอยู่ไหม
-                            bool isSerialUsed = await _context.ItemSerials
-                                .AnyAsync(x => x.SerialId == jt.SerialId && x.ItemId != item.IdItem);
-
-                            if (!isSerialUsed)
-                            {
-                                // ถ้า Serial ไม่มีใช้แล้วใน JoinTable(ItemSerial) อื่น ให้ลบจาก Serial
-                                _context.Serials.Remove(jt.Serial);
-                            }
-                        }
-                    }
-
-                    foreach (var sn in serialNumbersList)
-                    {
-
-                        var joinexsits = existingJTables.Any(jt => jt.Serial.SerialNumber == sn);
-                        if (!joinexsits)
-                        {
-                            var serialEntity = await _context.Serials.FirstOrDefaultAsync(s => s.SerialNumber == sn);
-                            if (serialEntity == null)
-                            {
-                                // เพิ่มใหม่
-                                serialEntity = new Serial
-                                {
-                                    SerialNumber = sn,
-                                    Status = "Active",
-                                    CretaeDate = DateTime.Now,
-                                    UpdateDate = DateTime.Now
-                                };
-                                _context.Serials.Add(serialEntity);
-                                await _context.SaveChangesAsync();
-                            }
-                            var newjoin = new ItemSerial
-                            {
-                                ItemId = item.IdItem,
-                                SerialId = serialEntity.IdSerial,
-                                Remark = null
-                            };
-                            _context.ItemSerials.Add(newjoin);
-                        }
-                    }
-
-                    await _context.SaveChangesAsync();
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -231,6 +215,37 @@ namespace ProductsRazor.Controllers
             return View(item);
         }
 
+        private void UpdateSerialNumber(ICollection<Serial> Serials, Item item)
+        {
+            foreach (var sn in Serials)
+            {
+                if (sn.IdSerial == 0)
+                {
+                    sn.IdItem = item.IdItem;
+                    sn.CretaeDate = DateTime.Now;
+                    sn.UpdateDate = DateTime.Now;
+                    sn.Status = "Active";
+                    sn.Isdeleted = false;
+
+                    _context.Serials.Add(sn);
+                }
+                else
+                {
+
+                    var existing = _context.Serials.FirstOrDefault(s => s.IdSerial == sn.IdSerial);
+                    if (existing != null)
+                    {
+
+                        existing.SerialNumber = sn.SerialNumber;
+                        existing.UpdateDate = DateTime.Now;
+                        existing.Isdeleted = sn.Isdeleted;
+                        // ห้ามแตะ Isdeleted ตรงนี้ เพราะลบไว้แล้วไม่ควร reset
+                        _context.Serials.Update(existing);
+                    }
+                }
+            }
+        }
+
 
         private bool ValidateItem(Item item, string[] serialNumber)
         {
@@ -248,7 +263,7 @@ namespace ProductsRazor.Controllers
                 hasError = true;
             }
 
-            if (serialNumber == null || serialNumber.Length == 0 || serialNumber.All(sn => string.IsNullOrWhiteSpace(sn)))
+            if (serialNumber == null || serialNumber.All(string.IsNullOrWhiteSpace))
             {
                 ModelState.AddModelError("serialNumber", "Serial number is required.");
                 hasError = true;
@@ -271,15 +286,14 @@ namespace ProductsRazor.Controllers
 
             var item = await _context.Items
                 .Include(i => i.IdCategoryNavigation)
-                .Include(i => i.ItemSerials)
-                    .ThenInclude(jt => jt.Serial)
+                .Include(i => i.Serials.Where(s => !s.Isdeleted))
                 .FirstOrDefaultAsync(i => i.IdItem == id);
             if (item == null)
             {
                 return NotFound();
             }
 
-            ViewBag.SerialNumber = item.ItemSerials.Select(jt => jt.Serial.SerialNumber).ToList();
+            ViewBag.SerialNumber = item.Serials.Select(s => s.SerialNumber).ToList();
             return View(item);
         }
 
@@ -288,34 +302,24 @@ namespace ProductsRazor.Controllers
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
             var item = await _context.Items
-                .Include(i => i.ItemSerials)
-                    .ThenInclude(jt => jt.Serial)
+                .Include(i => i.Serials)
                 .FirstOrDefaultAsync(i => i.IdItem == id);
             if (item == null)
             {
                 return NotFound();
             }
 
-            //เก็บ serial ที่จะลบ
-            var serialsToDelete = item.ItemSerials.Select(jt => jt.Serial).ToList();
 
-            // ลบ JoinTable(ItemSerial) records ที่เชื่อมกับ Item นี้
-            if (item.ItemSerials.Any())
-            {
-                _context.ItemSerials.RemoveRange(item.ItemSerials);
-                await _context.SaveChangesAsync();
-            }
+            _context.Serials.RemoveRange(item.Serials);
 
-            if (serialsToDelete.Any())
-            {
-                _context.Serials.RemoveRange(serialsToDelete);
-                await _context.SaveChangesAsync();
-            }
+
             _context.Items.Remove(item);
-            // item.IsDeleted = true;
+
             await _context.SaveChangesAsync();
+
             return RedirectToAction(nameof(Index));
         }
+
 
         public IActionResult Privacy()
         {
@@ -325,7 +329,7 @@ namespace ProductsRazor.Controllers
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+            return NotFound();
         }
 
         private void LoadCategories()        //โหลดข้อมูล Category
